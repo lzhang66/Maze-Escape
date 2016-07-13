@@ -7,6 +7,9 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		0A4982331D35555300068DBC /* key.sks in Resources */ = {isa = PBXBuildFile; fileRef = 0A4982321D35555300068DBC /* key.sks */; };
+		0A4982351D356C1C00068DBC /* teleport.sks in Resources */ = {isa = PBXBuildFile; fileRef = 0A4982341D356C1C00068DBC /* teleport.sks */; };
+		0A4982391D357AD900068DBC /* CGFloat+Extensions.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A4982381D357AD900068DBC /* CGFloat+Extensions.swift */; };
 		0A7AA5211D2D7920009B5A2E /* mazeHero.png in Resources */ = {isa = PBXBuildFile; fileRef = 0A7AA5201D2D7920009B5A2E /* mazeHero.png */; };
 		0A7AA5251D2D89B5009B5A2E /* level1.png in Resources */ = {isa = PBXBuildFile; fileRef = 0A7AA5241D2D89B5009B5A2E /* level1.png */; };
 		0A7AA5281D2E920C009B5A2E /* level1.sks in Resources */ = {isa = PBXBuildFile; fileRef = 0A7AA5271D2E920C009B5A2E /* level1.sks */; };
@@ -42,8 +45,8 @@
 		0AB1BF731D30023B0023CEF1 /* level3.12.png in Resources */ = {isa = PBXBuildFile; fileRef = 0AB1BF721D30023B0023CEF1 /* level3.12.png */; };
 		0AB1BF751D3002C10023CEF1 /* level3.12-.png in Resources */ = {isa = PBXBuildFile; fileRef = 0AB1BF741D3002C10023CEF1 /* level3.12-.png */; };
 		0ADD882A1D30200200027D91 /* sight.sks in Resources */ = {isa = PBXBuildFile; fileRef = 0ADD88291D30200200027D91 /* sight.sks */; };
-		0ADD882E1D3028FD00027D91 /* fire.png in Resources */ = {isa = PBXBuildFile; fileRef = 0ADD882D1D3028FD00027D91 /* fire.png */; };
-		0ADD88301D3033D100027D91 /* fire.sks in Resources */ = {isa = PBXBuildFile; fileRef = 0ADD882F1D3033D100027D91 /* fire.sks */; };
+		0ADD882E1D3028FD00027D91 /* torch.png in Resources */ = {isa = PBXBuildFile; fileRef = 0ADD882D1D3028FD00027D91 /* torch.png */; };
+		0ADD88301D3033D100027D91 /* torch.sks in Resources */ = {isa = PBXBuildFile; fileRef = 0ADD882F1D3033D100027D91 /* torch.sks */; };
 		0AE811931D2EB107001C6044 /* restartButton.png in Resources */ = {isa = PBXBuildFile; fileRef = 0AE811921D2EB107001C6044 /* restartButton.png */; };
 		0AE811951D2EB1A5001C6044 /* MSButtonNode.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0AE811941D2EB1A5001C6044 /* MSButtonNode.swift */; };
 		0AE811971D2EC44F001C6044 /* goal.sks in Resources */ = {isa = PBXBuildFile; fileRef = 0AE811961D2EC44F001C6044 /* goal.sks */; };
@@ -75,6 +78,9 @@
 /* End PBXContainerItemProxy section */
 
 /* Begin PBXFileReference section */
+		0A4982321D35555300068DBC /* key.sks */ = {isa = PBXFileReference; lastKnownFileType = file.sks; path = key.sks; sourceTree = "<group>"; };
+		0A4982341D356C1C00068DBC /* teleport.sks */ = {isa = PBXFileReference; lastKnownFileType = file.sks; path = teleport.sks; sourceTree = "<group>"; };
+		0A4982381D357AD900068DBC /* CGFloat+Extensions.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = "CGFloat+Extensions.swift"; sourceTree = "<group>"; };
 		0A7AA5201D2D7920009B5A2E /* mazeHero.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = mazeHero.png; sourceTree = "<group>"; };
 		0A7AA5241D2D89B5009B5A2E /* level1.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = level1.png; sourceTree = "<group>"; };
 		0A7AA5271D2E920C009B5A2E /* level1.sks */ = {isa = PBXFileReference; lastKnownFileType = file.sks; path = level1.sks; sourceTree = "<group>"; };
@@ -116,8 +122,8 @@
 		0AB1BF721D30023B0023CEF1 /* level3.12.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = level3.12.png; sourceTree = "<group>"; };
 		0AB1BF741D3002C10023CEF1 /* level3.12-.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = "level3.12-.png"; sourceTree = "<group>"; };
 		0ADD88291D30200200027D91 /* sight.sks */ = {isa = PBXFileReference; lastKnownFileType = file.sks; path = sight.sks; sourceTree = "<group>"; };
-		0ADD882D1D3028FD00027D91 /* fire.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = fire.png; sourceTree = "<group>"; };
-		0ADD882F1D3033D100027D91 /* fire.sks */ = {isa = PBXFileReference; lastKnownFileType = file.sks; path = fire.sks; sourceTree = "<group>"; };
+		0ADD882D1D3028FD00027D91 /* torch.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = torch.png; sourceTree = "<group>"; };
+		0ADD882F1D3033D100027D91 /* torch.sks */ = {isa = PBXFileReference; lastKnownFileType = file.sks; path = torch.sks; sourceTree = "<group>"; };
 		0AE811921D2EB107001C6044 /* restartButton.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = restartButton.png; sourceTree = "<group>"; };
 		0AE811941D2EB1A5001C6044 /* MSButtonNode.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = MSButtonNode.swift; sourceTree = "<group>"; };
 		0AE811961D2EC44F001C6044 /* goal.sks */ = {isa = PBXFileReference; lastKnownFileType = file.sks; path = goal.sks; sourceTree = "<group>"; };
@@ -172,14 +178,8 @@
 			children = (
 				0AEBE50A1D31C3AE002469ED /* sight.png */,
 				0AEBE5061D31C180002469ED /* piece.png */,
-				0AEBE5081D31C1C0002469ED /* piece.sks */,
-				0ADD88291D30200200027D91 /* sight.sks */,
-				0A7AA5321D2E9CAF009B5A2E /* red.sks */,
-				0AE811961D2EC44F001C6044 /* goal.sks */,
-				0AE8119A1D2ECD92001C6044 /* door.sks */,
-				0ADD882F1D3033D100027D91 /* fire.sks */,
 				0AE811981D2ECC8F001C6044 /* key.png */,
-				0ADD882D1D3028FD00027D91 /* fire.png */,
+				0ADD882D1D3028FD00027D91 /* torch.png */,
 				0A7AA5201D2D7920009B5A2E /* mazeHero.png */,
 				0AE811921D2EB107001C6044 /* restartButton.png */,
 				0AE8119C1D2ED6F5001C6044 /* congrats.png */,
@@ -236,10 +236,19 @@
 				0AA2CD7C1D2C7D5400C9CF86 /* GameScene.swift */,
 				0AE811941D2EB1A5001C6044 /* MSButtonNode.swift */,
 				0AA2CD7E1D2C7D5400C9CF86 /* GameViewController.swift */,
+				0A4982381D357AD900068DBC /* CGFloat+Extensions.swift */,
 				0AA2CD801D2C7D5400C9CF86 /* Main.storyboard */,
 				0AA2CD831D2C7D5400C9CF86 /* Assets.xcassets */,
 				0AA2CD851D2C7D5400C9CF86 /* LaunchScreen.storyboard */,
 				0AA2CD881D2C7D5400C9CF86 /* Info.plist */,
+				0AEBE5081D31C1C0002469ED /* piece.sks */,
+				0ADD88291D30200200027D91 /* sight.sks */,
+				0A7AA5321D2E9CAF009B5A2E /* red.sks */,
+				0AE811961D2EC44F001C6044 /* goal.sks */,
+				0AE8119A1D2ECD92001C6044 /* door.sks */,
+				0ADD882F1D3033D100027D91 /* torch.sks */,
+				0A4982321D35555300068DBC /* key.sks */,
+				0A4982341D356C1C00068DBC /* teleport.sks */,
 				0A7AA5291D2E939A009B5A2E /* resource */,
 				0A7AA5261D2E9183009B5A2E /* level */,
 			);
@@ -368,6 +377,7 @@
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				0A4982331D35555300068DBC /* key.sks in Resources */,
 				0AB1BF731D30023B0023CEF1 /* level3.12.png in Resources */,
 				0AE8119D1D2ED6F5001C6044 /* congrats.png in Resources */,
 				0AEBE5071D31C180002469ED /* piece.png in Resources */,
@@ -402,13 +412,14 @@
 				0AEBE50B1D31C3AE002469ED /* sight.png in Resources */,
 				0AB1BF6B1D2FF9570023CEF1 /* level3.4-.png in Resources */,
 				0AB1BF611D2FF2650023CEF1 /* level3.8.png in Resources */,
-				0ADD882E1D3028FD00027D91 /* fire.png in Resources */,
+				0ADD882E1D3028FD00027D91 /* torch.png in Resources */,
 				0A7AA5281D2E920C009B5A2E /* level1.sks in Resources */,
 				0AE8119F1D2EDC7F001C6044 /* congrats.sks in Resources */,
 				0AA2CD821D2C7D5400C9CF86 /* Main.storyboard in Resources */,
 				0AEBE5091D31C1C0002469ED /* piece.sks in Resources */,
 				0AB1BF6F1D3001360023CEF1 /* level3.10.png in Resources */,
-				0ADD88301D3033D100027D91 /* fire.sks in Resources */,
+				0ADD88301D3033D100027D91 /* torch.sks in Resources */,
+				0A4982351D356C1C00068DBC /* teleport.sks in Resources */,
 				0AB1BF711D3001A90023CEF1 /* level3.11.png in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
@@ -437,6 +448,7 @@
 				0AA2CD7D1D2C7D5400C9CF86 /* GameScene.swift in Sources */,
 				0AA2CD7F1D2C7D5400C9CF86 /* GameViewController.swift in Sources */,
 				0AA2CD791D2C7D5400C9CF86 /* AppDelegate.swift in Sources */,
+				0A4982391D357AD900068DBC /* CGFloat+Extensions.swift in Sources */,
 				0AE811951D2EB1A5001C6044 /* MSButtonNode.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
