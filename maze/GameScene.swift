@@ -9,7 +9,10 @@
 import SpriteKit
 import Foundation
 import UIKit
-var currentLevel = 3
+var currentLevel = 6
+var label: SKLabelNode!
+var tutorial: [String] = ["Swipe!", "Find the exit.", "Grab the key!", "Here is an hard one.", "Teleport!", "WHAT?!", "Not this way...", "", "Test your luck!", "Oops! Someone turned of the light..."]
+var index = -1 {didSet {label.runAction(SKAction.fadeInWithDuration(3)); label.text = tutorial[index]; label.runAction(SKAction.sequence([SKAction.waitForDuration(6), SKAction.fadeOutWithDuration(3)]))}}
 
 class GameScene: SKScene, SKPhysicsContactDelegate {
     var player: SKNode!
@@ -27,7 +30,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
     var startNode: SKNode!
     var teleporters: [SKNode:CGPoint] = [:]
     
-    var impulse: CGFloat = 100.0
+    var impulse: CGFloat = 80.0
     var resourcePath: String?
     var sightNum = 0 {didSet{sight.xScale *= 1.4; sight.yScale *= 1.4}}
     var numPieces = 0
@@ -35,6 +38,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
     var playerSize = 139.0
     var w: CGFloat = 0
     var h: CGFloat = 0
+    var location: CGPoint?
     
     override func didMoveToView(view: SKView) {
         player = childNodeWithName("player")
@@ -44,6 +48,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
         restartButton = player.childNodeWithName("restartButton") as! MSButtonNode
         restartButton.selectedHandler = {self.reload()}
         restartButton.hidden = true
+        label = camera?.childNodeWithName("label") as! SKLabelNode
         // Load level
         loadCurrentLevel()
         cameraTarget = player
@@ -61,14 +66,13 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
         swipeDown.direction = UISwipeGestureRecognizerDirection.Down
         self.view?.addGestureRecognizer(swipeDown)
         
-        self.view?.showsPhysics = true
 
         physicsWorld.contactDelegate = self
     }
     
     override func touchesBegan(touches: Set<UITouch>, withEvent event: UIEvent?) {
        /* Called when a touch begins */
-        
+        if currentLevel == 1 && index == 0 {index += 1}
     }
     
     override func update(currentTime: CFTimeInterval) {
@@ -79,13 +83,13 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
     
     func didBeginContact(contact: SKPhysicsContact){
         if contact.bodyA.node == nil || contact.bodyB.node == nil {
-            return
-        }
+            return}
         // 24: trap
         if contact.bodyA.categoryBitMask == 24 || contact.bodyB.categoryBitMask == 24 {gameOver()}
         else if contact.bodyA.node == goal || contact.bodyB.node == goal {currentLevel += 1; reload()}
-        else if contact.bodyA.categoryBitMask == 6 || contact.bodyB.categoryBitMask == 6
-        {if contact.bodyA.categoryBitMask == 6 {contact.bodyA.node!.removeFromParent()}
+        // 4: key
+        else if (contact.bodyA.categoryBitMask == 4 || contact.bodyB.categoryBitMask == 4) && levelNode.childNodeWithName("//KEY")?.hidden != true
+        {if contact.bodyA.categoryBitMask == 4 {contact.bodyA.node!.removeFromParent()}
         else {contact.bodyB.node!.removeFromParent()}; door.removeFromParent()}
         // 16: torch
         else if contact.bodyA.categoryBitMask == 16 || contact.bodyB.categoryBitMask == 16 {
@@ -94,34 +98,44 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
             else {contact.bodyB.node!.removeFromParent()} }
         // 32: piece
         else if contact.bodyA.categoryBitMask == 32 || contact.bodyB.categoryBitMask == 32 {
-            numPieces += 1;
+            numPieces += 1
             if contact.bodyA.categoryBitMask == 32 {contact.bodyA.node!.removeFromParent()}
             else {contact.bodyB.node!.removeFromParent()}
-            if numPieces == requiredPieces {key.hidden = false}
+            if numPieces == requiredPieces {levelNode.childNodeWithName("//KEY")!.hidden = false}
         }
         // Body A is teleporter
         else if contact.bodyA.categoryBitMask == 18 {
             if teleporters[contact.bodyA.node!.parent!.parent!] == nil {
                 w = (levelNode.childNodeWithName("//size")!.position.x)
                 h = (levelNode.childNodeWithName("//size")!.position.y)
-                teleporters[contact.bodyA.node!.parent!.parent!] = CGPoint(x: CGFloat.random(min:-w, max: w), y: CGFloat.random(min:-h, max: h))
+                location = CGPoint(x: CGFloat.random(min:-w, max: w), y: CGFloat.random(min:-h, max: h))
             }
             player.physicsBody = nil
-            player.position = levelNode.convertPoint(teleporters[contact.bodyA.node!.parent!.parent!]!, toNode: self)
+            if let location = location {player.position = levelNode.convertPoint(location, toNode: self)}
+            else {player.position = levelNode.convertPoint(teleporters[contact.bodyA.node!.parent!.parent!]!, toNode: self)}
             player.physicsBody = SKPhysicsBody(circleOfRadius: CGFloat(50))
             player.physicsBody!.dynamic = true
             player.physicsBody!.affectedByGravity = false
-            player.physicsBody!.collisionBitMask = 7
+            player.physicsBody!.mass = 0.8
+            player.physicsBody?.categoryBitMask = 1
+            player.physicsBody!.collisionBitMask = 3
             player.physicsBody!.contactTestBitMask = 4294967295
         }
         else if contact.bodyB.categoryBitMask == 18 {
             player.physicsBody = nil
-            player.position = levelNode.convertPoint(teleporters[contact.bodyB.node!]!, toNode: self)
+            if let location = location {player.position = levelNode.convertPoint(location, toNode: self)}
+            else {player.position = levelNode.convertPoint(teleporters[contact.bodyB.node!.parent!.parent!]!, toNode: self)}
             player.physicsBody = SKPhysicsBody(circleOfRadius: CGFloat(50))
             player.physicsBody!.dynamic = true
             player.physicsBody?.affectedByGravity = false
-            player.physicsBody?.collisionBitMask = 7
+            player.physicsBody!.mass = 0.8
+            player.physicsBody?.categoryBitMask = 1
+            player.physicsBody?.collisionBitMask = 3
             player.physicsBody!.contactTestBitMask = 4294967295}
+        else if (contact.bodyA.node?.name == "Oops" || contact.bodyB.node?.name == "Oops") && index == 4 {
+            index += 1}
+        else if (contact.bodyA.node?.name == "Oops" || contact.bodyB.node?.name == "Oops") && index == 5 {
+            index += 1}
     }
     // Actions to be done when swiped
     func gameOver(){
@@ -144,15 +158,27 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
     
     func loadCurrentLevel(){
         levelNode.removeAllChildren()
-        teleporters = [:]
+        teleporters.removeAll()
         switch currentLevel {
         case 1:
             resourcePath = NSBundle.mainBundle().pathForResource("level1", ofType: "sks")
+            index = 0
         case 2:
             resourcePath = NSBundle.mainBundle().pathForResource("level2", ofType: "sks")
+            index = 2
         case 3:
             resourcePath = NSBundle.mainBundle().pathForResource("level3", ofType: "sks")
-            requiredPieces = 3
+            index = 3
+        case 4:
+            resourcePath = NSBundle.mainBundle().pathForResource("level4", ofType: "sks")
+            index = 4
+        case 6:
+            resourcePath = NSBundle.mainBundle().pathForResource("level6", ofType: "sks")
+            index = 8
+        case 9:
+            resourcePath = NSBundle.mainBundle().pathForResource("level9", ofType: "sks")
+            requiredPieces = 4
+            index = 9
             sight.hidden = false
         default:
             resourcePath = NSBundle.mainBundle().pathForResource("congrats", ofType: "sks")
@@ -160,15 +186,23 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
             gameOver()}
         if let resourcePath = resourcePath{
             levelNode.addChild(SKReferenceNode (URL: NSURL (fileURLWithPath: resourcePath)))
-            if currentLevel <= 3 {
+            // Connections
+            if currentLevel <= 9 {
                 goal = levelNode.childNodeWithName("//goal")
                 key = levelNode.childNodeWithName("//key")
                 door = levelNode.childNodeWithName("//door")}
-            if currentLevel == 3 {
+            // Teleporters
+            if currentLevel == 4 {
+                teleporters[levelNode.childNodeWithName("//t1")!] = levelNode.childNodeWithName("//l1")!.position
+                teleporters[levelNode.childNodeWithName("//t2")!] = levelNode.childNodeWithName("//l2")!.position
+                teleporters[levelNode.childNodeWithName("//t3")!] = levelNode.childNodeWithName("//start")!.position}
+            if currentLevel == 6 {
+                teleporters[levelNode.childNodeWithName("//ran")!] = nil}
+            if currentLevel == 9 {
+                levelNode.childNodeWithName("//KEY")!.hidden = true
                 teleporters[levelNode.childNodeWithName("//toPiece")!] = levelNode.childNodeWithName("//loc1")!.position
                 teleporters[levelNode.childNodeWithName("//toKey")!] = levelNode.childNodeWithName("//loc2")!.position
-                teleporters[levelNode.childNodeWithName("//random")!] = nil
-            }
+                teleporters[levelNode.childNodeWithName("//random")!] = nil}
         }
         // Set the starting position
         startNode = levelNode.childNodeWithName("//start")
