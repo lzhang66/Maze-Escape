@@ -9,9 +9,9 @@
 import SpriteKit
 import Foundation
 import UIKit
-var currentLevel = 8
+var currentLevel = 1
 var label: SKLabelNode!
-var tutorial: [String] = ["Swipe!", "Find the exit.", "Grab the key!", "Here is an hard one.", "Teleport!", "WHAT?!", "Not this way...", "", "Test your luck!", "Where is the key?", "Oops! Someone turned of the light..."]
+var tutorial: [String] = ["Swipe!", "Find the exit.", "Grab the key!", "Here is an hard one.", "Teleport!", "WHAT?!", "Not this way...", "Try this.", "Test your luck!", "Where is the key?", "Oops! Someone turned of the light...", "Nightmare Mode"]
 var index = -1 {didSet {label.runAction(SKAction.fadeInWithDuration(3)); label.text = tutorial[index]; label.runAction(SKAction.sequence([SKAction.waitForDuration(6), SKAction.fadeOutWithDuration(3)]))}}
 
 class GameScene: SKScene, SKPhysicsContactDelegate {
@@ -32,7 +32,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
     
     var impulse: CGFloat = 100.0
     var resourcePath: String?
-    var sightNum = 0 {didSet{sight.xScale *= 1.4; sight.yScale *= 1.4}}
+    var sightNum = 0 {didSet{sight.xScale *= 1.5; sight.yScale *= 1.5}}
     var numPieces = 0
     var requiredPieces = 0
     var playerSize = 139.0
@@ -174,6 +174,9 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
         case 4:
             resourcePath = NSBundle.mainBundle().pathForResource("level4", ofType: "sks")
             index = 4
+        case 5:
+            resourcePath = NSBundle.mainBundle().pathForResource("level5", ofType: "sks")
+            index = 7
         case 6:
             resourcePath = NSBundle.mainBundle().pathForResource("level6", ofType: "sks")
             index = 8
@@ -184,10 +187,15 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
         case 8:
             resourcePath = NSBundle.mainBundle().pathForResource("level8", ofType: "sks")
             requiredPieces = 3
+        case 9:
+            resourcePath = NSBundle.mainBundle().pathForResource("level9", ofType: "sks")
+            index = 10
+            sight.xScale *= 1.3; sight.yScale *= 1.3
+            sight.hidden = false
         case 10:
             resourcePath = NSBundle.mainBundle().pathForResource("level10", ofType: "sks")
+            index = 11
             requiredPieces = 4
-            index = 10
             sight.hidden = false
         default:
             resourcePath = NSBundle.mainBundle().pathForResource("congrats", ofType: "sks")
@@ -206,6 +214,14 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
                 teleporters[levelNode.childNodeWithName("//t1")!] = levelNode.childNodeWithName("//l1")!.position
                 teleporters[levelNode.childNodeWithName("//t2")!] = levelNode.childNodeWithName("//l2")!.position
                 teleporters[levelNode.childNodeWithName("//t3")!] = levelNode.childNodeWithName("//start")!.position
+                
+            case 5:
+                teleporters[levelNode.childNodeWithName("//t1s")!] = levelNode.childNodeWithName("//start")!.position
+                teleporters[levelNode.childNodeWithName("//t2s")!] = levelNode.childNodeWithName("//start")!.position
+                teleporters[levelNode.childNodeWithName("//t3")!] = levelNode.childNodeWithName("//l3")!.position
+                teleporters[levelNode.childNodeWithName("//t4")!] = levelNode.childNodeWithName("//l4")!.position
+                teleporters[levelNode.childNodeWithName("//t5g")!] = levelNode.childNodeWithName("//g")!.position
+                teleporters[levelNode.childNodeWithName("//t6k")!] = levelNode.childNodeWithName("//k")!.position
             case 6:
                 teleporters[levelNode.childNodeWithName("//ran")!] = nil
             case 7:
@@ -219,6 +235,11 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
                 teleporters[levelNode.childNodeWithName("//t1")!] = levelNode.childNodeWithName("//loc")!.position
                 teleporters[levelNode.childNodeWithName("//t2")!] = levelNode.childNodeWithName("//loc")!.position
                 teleporters[levelNode.childNodeWithName("//t3")!] = levelNode.childNodeWithName("//loc")!.position
+            case 9:
+                teleporters[levelNode.childNodeWithName("//r1")!] = nil
+                teleporters[levelNode.childNodeWithName("//r2")!] = nil
+                teleporters[levelNode.childNodeWithName("//t1")!] = levelNode.childNodeWithName("//l1")!.position
+                teleporters[levelNode.childNodeWithName("//t2")!] = levelNode.childNodeWithName("//l2")!.position
             case 10:
                 teleporters[levelNode.childNodeWithName("//toPiece")!] = levelNode.childNodeWithName("//loc1")!.position
                 teleporters[levelNode.childNodeWithName("//toKey")!] = levelNode.childNodeWithName("//loc2")!.position
