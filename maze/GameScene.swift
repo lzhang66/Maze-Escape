@@ -11,8 +11,13 @@ import Foundation
 import UIKit
 var currentLevel = 1
 var label: SKLabelNode!
-var tutorial: [String] = ["Swipe!", "Find the exit.", "Grab the key!", "Here is an hard one.", "Teleport!", "WHAT?!", "Not this way...", "Try this.", "Test your luck!", "Where is the key?", "Oops! Someone turned of the light...", "Nightmare Mode"]
+var record: [String] = ["", "", "", "", "", "", "", "", "", ""]
+var timer: Double = 0
+var tutorial: [String] = ["Swipe!", "Find the exit.", "Grab the key!", "Here is a hard one.", "Teleport!", "WHAT?!", "Not this way...", "Try this.", "Test your luck!", "Where is the key?", "Oops! Someone turned of the light...", "Nightmare Mode"]
 var index = -1 {didSet {label.runAction(SKAction.fadeInWithDuration(3)); label.text = tutorial[index]; label.runAction(SKAction.sequence([SKAction.waitForDuration(6), SKAction.fadeOutWithDuration(3)]))}}
+var numDeath = 0
+
+var data = NSUserDefaults.standardUserDefaults()
 
 class GameScene: SKScene, SKPhysicsContactDelegate {
     var player: SKNode!
@@ -29,6 +34,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
     var restartButton: MSButtonNode!
     var startNode: SKNode!
     var teleporters: [SKNode:CGPoint] = [:]
+    var buttonMain: MSButtonNode!
     
     var impulse: CGFloat = 100.0
     var resourcePath: String?
@@ -41,6 +47,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
     var location: CGPoint?
     
     override func didMoveToView(view: SKView) {
+        if data.integerForKey("highestLevel") == 0 {data.setValue(1, forKey: "highestLevel")}
         player = childNodeWithName("player")
         sight = camera!.childNodeWithName("a") as! SKReferenceNode
         sight.hidden = true
@@ -48,7 +55,14 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
         restartButton = player.childNodeWithName("restartButton") as! MSButtonNode
         restartButton.selectedHandler = {self.reload()}
         restartButton.hidden = true
-        label = camera?.childNodeWithName("label") as! SKLabelNode
+        // Return to main manu
+        buttonMain = camera!.childNodeWithName("main") as! MSButtonNode
+        buttonMain.selectedHandler = {
+            let skView = self.view as SKView!
+            let scene = Main(fileNamed:"Main") as Main!
+            scene.scaleMode = .AspectFit
+            skView.presentScene(scene)}
+        label = camera!.childNodeWithName("label") as! SKLabelNode
         // Load level
         loadCurrentLevel()
         if requiredPieces > 0 {levelNode.childNodeWithName("//KEY")!.hidden = true}
@@ -66,7 +80,6 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
         swipeDown = UISwipeGestureRecognizer(target: self, action: #selector(GameScene.swiped))
         swipeDown.direction = UISwipeGestureRecognizerDirection.Down
         self.view?.addGestureRecognizer(swipeDown)
-        
 
         physicsWorld.contactDelegate = self
    //     self.view?.showsPhysics = true
@@ -81,14 +94,32 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
         /* Called before each frame is rendered */
         // Camera follows player
         if let cameraTarget = cameraTarget {camera?.position = cameraTarget.position}
+        timer += 1/60
     }
     
     func didBeginContact(contact: SKPhysicsContact){
         if contact.bodyA.node == nil || contact.bodyB.node == nil {
             return}
         // 24: trap
-        if contact.bodyA.categoryBitMask == 24 || contact.bodyB.categoryBitMask == 24 {gameOver()}
-        else if contact.bodyA.node == goal || contact.bodyB.node == goal {currentLevel += 1; reload()}
+        if contact.bodyA.categoryBitMask == 24 || contact.bodyB.categoryBitMask == 24 {
+            numDeath += 1; gameOver()}
+        
+        else if contact.bodyA.node == goal || contact.bodyB.node == goal {
+            timer = Double(Int(timer * 100)) / 100.0
+            if record[currentLevel - 1] == "" {
+                record[currentLevel - 1] = String(timer)
+            }
+            else {
+                if timer <= Double(record[currentLevel - 1]) {
+                    record[currentLevel - 1] = String(timer)
+                }
+            }
+            currentLevel += 1; timer = 0;
+            if currentLevel > data.integerForKey("highestLevel") {
+                data.setValue(currentLevel, forKey: "highestLevel")}
+            data.setValue(record, forKey: "records")
+            numDeath = 0
+            reload()}
         // 4: key
         else if (contact.bodyA.categoryBitMask == 4 || contact.bodyB.categoryBitMask == 4) && levelNode.childNodeWithName("//KEY")?.hidden != true
         {if contact.bodyA.categoryBitMask == 4 {contact.bodyA.node!.removeFromParent()}
@@ -139,13 +170,13 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
         else if (contact.bodyA.node?.name == "Oops" || contact.bodyB.node?.name == "Oops") && index == 5 {
             index += 1}
     }
-    // Actions to be done when swiped
     func gameOver(){
         player.physicsBody?.velocity = CGVectorMake(0, 0)
         player.physicsBody?.dynamic = false
         player.runAction(SKAction.colorizeWithColor(UIColor.redColor(), colorBlendFactor: 1.0, duration: 0.50))
         restartButton.hidden = false}
     
+    // Actions to be done when swiped
     func swiped(sender: UISwipeGestureRecognizer) {
         switch sender {
         case swipeRight:
@@ -199,7 +230,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
             sight.hidden = false
         default:
             resourcePath = NSBundle.mainBundle().pathForResource("congrats", ofType: "sks")
-            levelNode.zPosition = 1; currentLevel = 1
+            levelNode.zPosition = 1; currentLevel = 1; data.setValue(10, forKey: "highestLevel");
             gameOver()}
         if let resourcePath = resourcePath{
             levelNode.addChild(SKReferenceNode (URL: NSURL (fileURLWithPath: resourcePath)))
