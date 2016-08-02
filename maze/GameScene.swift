@@ -9,172 +9,314 @@
 import SpriteKit
 import Foundation
 import UIKit
+
+//mixpanel.track("", parameters:["": ""])
+var gameMode: Int = 0
 var currentLevel = 1
-var label: SKLabelNode!
-var record: [String] = ["", "", "", "", "", "", "", "", "", ""]
+var tutorialLabel: SKLabelNode!
 var timer: Double = 0
-var tutorial: [String] = ["Swipe!", "Find the exit.", "Grab the key!", "Here is a hard one.", "Teleport!", "WHAT?!", "Not this way...", "Try this.", "Test your luck!", "Where is the key?", "Oops! Someone turned of the light...", "Nightmare Mode"]
-var index = -1 {didSet {label.runAction(SKAction.fadeInWithDuration(3)); label.text = tutorial[index]; label.runAction(SKAction.sequence([SKAction.waitForDuration(6), SKAction.fadeOutWithDuration(3)]))}}
+var tutorial: [String] = ["Swipe!", "Find the exit.", "Grab the key!", "Here is a hard one.", "Teleport!", "WHAT?!", "Not this way...", "Try this.", "Test your luck!", "Where is the key?", "Oops! Someone turned of the light...", "The last level!"]
+var index = -1 {didSet {
+    tutorialLabel.runAction(SKAction.fadeInWithDuration(3)); tutorialLabel.text = tutorial[index]; tutorialLabel.runAction(SKAction.sequence([SKAction.waitForDuration(6), SKAction.fadeOutWithDuration(3)]))}}
 var numDeath = 0
 
 var data = NSUserDefaults.standardUserDefaults()
 
 class GameScene: SKScene, SKPhysicsContactDelegate {
     var player: SKNode!
-    var cameraTarget: SKNode!
+    weak var cameraTarget: SKNode!
+    weak var levelNode: SKNode!
+    var goal: SKNode!
+    var key: SKNode!
+    var door: SKNode!
+    var Continue: SKNode!
+    var startNode: SKNode!
+    var sight: SKNode!
+    var pass: SKNode!
+    var Frame: SKNode!
+    var timeLabel: SKLabelNode!
+    var label: SKLabelNode!
+    var hint: SKLabelNode!
     var swipeRight: UISwipeGestureRecognizer!
     var swipeLeft: UISwipeGestureRecognizer!
     var swipeDown: UISwipeGestureRecognizer!
     var swipeUp: UISwipeGestureRecognizer!
-    var levelNode: SKNode!
-    var goal: SKNode!
-    var key: SKNode!
-    var door: SKNode!
-    var sight: SKReferenceNode!
-    var restartButton: MSButtonNode!
-    var startNode: SKNode!
     var teleporters: [SKNode:CGPoint] = [:]
+    var monsters: [Monster]! = []
     var buttonMain: MSButtonNode!
+    var buttonPause: MSButtonNode!
+    var buttonRestart: MSButtonNode!
+    var buttonSkip: MSButtonNode!
+    var buttonPiece: MSButtonNode!
+    var buttonNext: MSButtonNode!
+    var swipeBegins: CGPoint!
+    var swipeEnds: CGPoint!
+    var swipeVector: CGVector!
     
     var impulse: CGFloat = 100.0
     var resourcePath: String?
-    var sightNum = 0 {didSet{sight.xScale *= 1.5; sight.yScale *= 1.5}}
+    var numTorches = 0 {didSet{sight.xScale *= 1.5; sight.yScale *= 1.5}}
     var numPieces = 0
     var requiredPieces = 0
     var playerSize = 139.0
     var w: CGFloat = 0
     var h: CGFloat = 0
     var location: CGPoint?
+    var velocity: CGVector = CGVectorMake(0, 0)
+    var pieceLocationTimer = 0.0
+    var x: CGFloat = 0.0
+    var y: CGFloat = 0.0
+    var mass: CGFloat = 0.5
+    
+    var record: [String]!
     
     override func didMoveToView(view: SKView) {
+        data.setBool(true, forKey: "nightmare")
+        if data.arrayForKey("records")?[0] == nil {
+            data.setValue(["","","","","","","","","",""], forKey: "records")
+        }
+        record = data.arrayForKey("records") as! [String]
         if data.integerForKey("highestLevel") == 0 {data.setValue(1, forKey: "highestLevel")}
         player = childNodeWithName("player")
-        sight = camera!.childNodeWithName("a") as! SKReferenceNode
-        sight.hidden = true
         levelNode = childNodeWithName("level")
-        restartButton = player.childNodeWithName("restartButton") as! MSButtonNode
-        restartButton.selectedHandler = {self.reload()}
-        restartButton.hidden = true
-        // Return to main manu
+        
+        Frame = camera!.childNodeWithName("frame")
+        Frame.hidden = true
+        pass = camera!.childNodeWithName("pass")
+        pass.hidden = true
+        Continue = camera!.childNodeWithName("continue")
+        Continue.hidden = true
+        sight = camera!.childNodeWithName("a")
+        sight.hidden = true
+        tutorialLabel = camera!.childNodeWithName("tutorialLabel") as! SKLabelNode
+        timeLabel = camera!.childNodeWithName("timer") as! SKLabelNode
+        label = camera!.childNodeWithName("label") as! SKLabelNode
+        hint = pass.childNodeWithName("//h") as! SKLabelNode
+        hint.text = ""
+        buttonRestart = camera!.childNodeWithName("restartButton") as! MSButtonNode
+        buttonRestart.selectedHandler = {self.reload()}
+        buttonRestart.hidden = true
+        // Return button
         buttonMain = camera!.childNodeWithName("main") as! MSButtonNode
         buttonMain.selectedHandler = {
+            timer = 0; numDeath = 0
             let skView = self.view as SKView!
             let scene = Main(fileNamed:"Main") as Main!
             scene.scaleMode = .AspectFit
             skView.presentScene(scene)}
-        label = camera!.childNodeWithName("label") as! SKLabelNode
+        // Pause button
+        buttonPause = camera!.childNodeWithName("pause") as! MSButtonNode
+        buttonPause.selectedHandler = {
+            for n in self.monsters {n.removeAllActions()}
+            self.velocity = (self.player.physicsBody?.velocity)!
+            self.player.physicsBody?.velocity = CGVectorMake(0, 0)
+            self.player.physicsBody?.dynamic = false
+            self.Continue.hidden = false}
+        buttonSkip = camera!.childNodeWithName("skip") as! MSButtonNode
+        buttonSkip.selectedHandler = {
+            currentLevel += 1; numDeath = 0
+            if currentLevel > data.integerForKey("highestLevel"){data.setValue(currentLevel, forKey: "highestLevel")}
+            self.reload()}
+        buttonSkip.hidden = true
+        // Key piece position button
+        buttonPiece = camera!.childNodeWithName("piecePosition") as! MSButtonNode
+        buttonPiece.selectedHandler = {
+            if self.requiredPieces > 0 && self.pieceLocationTimer >= 12{
+                if self.numPieces < self.requiredPieces {
+                    self.cameraTarget = self.levelNode.childNodeWithName("//piece")!.parent!.parent}
+                else {self.cameraTarget = self.levelNode.childNodeWithName("//KEY")}
+                self.cameraTarget!.runAction(SKAction.sequence([SKAction.waitForDuration(2), SKAction.runBlock({self.cameraTarget = self.player})]))
+                self.pieceLocationTimer = 0}
+        }
+        buttonNext = pass.childNodeWithName("//next") as! MSButtonNode
+        buttonNext.selectedHandler = {
+            currentLevel += 1; numDeath = 0
+            self.reload()
+        }
         // Load level
         loadCurrentLevel()
-        if requiredPieces > 0 {levelNode.childNodeWithName("//KEY")!.hidden = true}
+        if requiredPieces > 0 {
+            levelNode.childNodeWithName("//KEY")!.hidden = true
+            label.text = "\(numPieces) / \(requiredPieces)"}
+        
         cameraTarget = player
         // Set the swipe gesture
-        swipeRight = UISwipeGestureRecognizer(target: self, action: #selector(GameScene.swiped))
-        swipeRight.direction = UISwipeGestureRecognizerDirection.Right
-        self.view?.addGestureRecognizer(swipeRight)
-        swipeLeft = UISwipeGestureRecognizer(target: self, action: #selector(GameScene.swiped))
-        swipeLeft.direction = UISwipeGestureRecognizerDirection.Left
-        self.view?.addGestureRecognizer(swipeLeft)
-        swipeUp = UISwipeGestureRecognizer(target: self, action: #selector(GameScene.swiped))
-        swipeUp.direction = UISwipeGestureRecognizerDirection.Up
-        self.view?.addGestureRecognizer(swipeUp)
-        swipeDown = UISwipeGestureRecognizer(target: self, action: #selector(GameScene.swiped))
-        swipeDown.direction = UISwipeGestureRecognizerDirection.Down
-        self.view?.addGestureRecognizer(swipeDown)
-
+        if data.integerForKey("highestLevel") <= 3 {
+            swipeRight = UISwipeGestureRecognizer(target: self, action: #selector(GameScene.swiped))
+            swipeRight.direction = UISwipeGestureRecognizerDirection.Right
+            self.view?.addGestureRecognizer(swipeRight)
+            swipeLeft = UISwipeGestureRecognizer(target: self, action: #selector(GameScene.swiped))
+            swipeLeft.direction = UISwipeGestureRecognizerDirection.Left
+            self.view?.addGestureRecognizer(swipeLeft)
+            swipeUp = UISwipeGestureRecognizer(target: self, action: #selector(GameScene.swiped))
+            swipeUp.direction = UISwipeGestureRecognizerDirection.Up
+            self.view?.addGestureRecognizer(swipeUp)
+            swipeDown = UISwipeGestureRecognizer(target: self, action: #selector(GameScene.swiped))
+            swipeDown.direction = UISwipeGestureRecognizerDirection.Down
+            self.view?.addGestureRecognizer(swipeDown)}
+        
         physicsWorld.contactDelegate = self
    //     self.view?.showsPhysics = true
+        
+        
     }
     
     override func touchesBegan(touches: Set<UITouch>, withEvent event: UIEvent?) {
        /* Called when a touch begins */
-        if currentLevel == 1 && index == 0 {index += 1}
+        if currentLevel == 1 && index == 0 {
+            tutorialLabel.runAction(SKAction.waitForDuration(3));index += 1}
+        if Continue.hidden == false {
+            Continue.hidden = true
+            player.physicsBody?.dynamic = true
+            player.physicsBody?.velocity = velocity}
+        if data.integerForKey("highestLevel") >= 4 {
+            for touch in touches {
+                swipeBegins = touch.locationInNode(self)}
+        }
+        if data.integerForKey("highestLevel") >= 9 {
+            for touch in touches {
+                if self.nodeAtPoint(touch.locationInNode(self)) == player {
+                    player.physicsBody!.linearDamping = 3
+                }
+            }
+        }
+    }
+    
+    override func touchesEnded(touches: Set<UITouch>, withEvent event: UIEvent?) {
+        player.physicsBody!.linearDamping = 0.1
+        if data.integerForKey("highestLevel") >= 4 {
+            for touch in touches {
+                if self.nodeAtPoint(touch.locationInNode(self)) != player {
+                    swipeEnds = touch.locationInNode(self)
+                    swipeVector = CGVectorMake(swipeEnds.x - swipeBegins.x, swipeEnds.y - swipeBegins.y)
+                    if (swipeVector.dx <= 5 && swipeVector.dx >= -5) && (swipeVector.dy <= 5 && swipeVector.dy >= -5) {return}
+                    x = swipeVector.dx / sqrt(swipeVector.dx * swipeVector.dx + swipeVector.dy * swipeVector.dy)
+                    y = swipeVector.dy / sqrt(swipeVector.dx * swipeVector.dx + swipeVector.dy * swipeVector.dy)
+                    player.physicsBody?.applyImpulse(CGVectorMake(impulse * x, impulse * y))}
+            }
+        }
     }
     
     override func update(currentTime: CFTimeInterval) {
         /* Called before each frame is rendered */
         // Camera follows player
-        if let cameraTarget = cameraTarget {camera?.position = cameraTarget.position}
-        timer += 1/60
+        if let cameraTarget = cameraTarget {
+            if cameraTarget == player {
+                camera?.runAction(SKAction.moveTo(player.position, duration: 0.1))}
+            else {camera?.runAction(SKAction.moveTo(levelNode.convertPoint(cameraTarget.position, toNode: self), duration: 1.5))}
+        }
+        if buttonRestart.hidden == true && Continue.hidden == true {
+            timer += 1/60; pieceLocationTimer += 1/60
+            timeLabel.text = "\(Double(Int(timer * 100)) / 100.0)"
+            for n in monsters {n.search(player, game: self)}
+        }
+        if pieceLocationTimer >= 12 && requiredPieces > 0 {
+            self.Frame.hidden = false
+            self.Frame.runAction(SKAction.fadeInWithDuration(0.1))
+            self.Frame.runAction(SKAction.resizeByWidth(1000, height: 1000, duration: 10))
+            self.Frame.runAction(SKAction.sequence([SKAction.fadeOutWithDuration(7),SKAction.resizeByWidth(-1000, height: -1000, duration: 0.5)]))
+        }
+        
     }
     
     func didBeginContact(contact: SKPhysicsContact){
-        if contact.bodyA.node == nil || contact.bodyB.node == nil {
-            return}
+        if contact.bodyA.node == nil || contact.bodyB.node == nil {return}
+        // 1024: monster. If monster collide with anything other than player
+        if contact.bodyA.categoryBitMask == 1024 && contact.bodyB.node != player && contact.bodyB.categoryBitMask != 24{return}
+        else if contact.bodyB.categoryBitMask == 1024 && contact.bodyA.node != player && contact.bodyA.categoryBitMask != 24{return}
+        // 1024: monster
+        if (contact.bodyA.node == player && contact.bodyB.categoryBitMask == 1024) || (contact.bodyB.node == player && contact.bodyA.categoryBitMask == 1024) {
+            for n in monsters {n.physicsBody = nil}
+            numDeath += 1; gameOver(); if numDeath >= 5 {buttonSkip.hidden = false}
+        }
         // 24: trap
         if contact.bodyA.categoryBitMask == 24 || contact.bodyB.categoryBitMask == 24 {
-            numDeath += 1; gameOver()}
-        
+            if contact.bodyA.categoryBitMask == 1024 {contact.bodyA.node!.removeFromParent()}
+            else if contact.bodyB.categoryBitMask == 1024 {contact.bodyB.node!.removeFromParent()}
+            else {numDeath += 1; gameOver(); if numDeath >= 5 {buttonSkip.hidden = false}}
+        }
+        // Goal
         else if contact.bodyA.node == goal || contact.bodyB.node == goal {
-            timer = Double(Int(timer * 100)) / 100.0
+            
+            timer = Double(Int(timer * 100)) / 100.0; pass.hidden = false; gameOver()
+            if currentLevel == 1 {hint.text = "Only swipe up, down, left or right."}
+            if currentLevel == 3 {hint.text = "You can now swipe at any direction!"} 
+            else if currentLevel == 7 {hint.text = "Try the hint button in main manu."}
+            else if currentLevel == 8 {hint.text = "Tap & hold the ball to slow down!"}
+            else if currentLevel == 10 {hint.text = "Nightmare Mode enabled."}
             if record[currentLevel - 1] == "" {
-                record[currentLevel - 1] = String(timer)
-            }
+                record[currentLevel - 1] = String(timer)}
             else {
-                if timer <= Double(record[currentLevel - 1]) {
-                    record[currentLevel - 1] = String(timer)
-                }
+                if timer <= Double(record[currentLevel - 1]) {record[currentLevel - 1] = String(timer)}
             }
-            currentLevel += 1; timer = 0;
-            if currentLevel > data.integerForKey("highestLevel") {
-                data.setValue(currentLevel, forKey: "highestLevel")}
-            data.setValue(record, forKey: "records")
-            numDeath = 0
-            reload()}
+            if currentLevel == data.integerForKey("highestLevel") {data.setInteger(currentLevel + 1, forKey: "highestLevel")}
+            data.setValue(record, forKey: "records"); timer = 0; numDeath = 0}
         // 4: key
         else if (contact.bodyA.categoryBitMask == 4 || contact.bodyB.categoryBitMask == 4) && levelNode.childNodeWithName("//KEY")?.hidden != true
         {if contact.bodyA.categoryBitMask == 4 {contact.bodyA.node!.removeFromParent()}
         else {contact.bodyB.node!.removeFromParent()}; door.removeFromParent()}
         // 16: torch
         else if contact.bodyA.categoryBitMask == 16 || contact.bodyB.categoryBitMask == 16 {
-            sightNum += 1;
+            numTorches += 1;
             if contact.bodyA.categoryBitMask == 16 {contact.bodyA.node!.removeFromParent()}
             else {contact.bodyB.node!.removeFromParent()} }
         // 32: piece
         else if contact.bodyA.categoryBitMask == 32 || contact.bodyB.categoryBitMask == 32 {
-            numPieces += 1
+            numPieces += 1; label.text = "\(numPieces) / \(requiredPieces)"
             if contact.bodyA.categoryBitMask == 32 {contact.bodyA.node!.removeFromParent()}
             else {contact.bodyB.node!.removeFromParent()}
             if numPieces == requiredPieces {levelNode.childNodeWithName("//KEY")!.hidden = false}
         }
         // Body A is teleporter
         else if contact.bodyA.categoryBitMask == 18 {
+            mass = contact.bodyB.mass
+            let obj = contact.bodyB.node
+            // Random teleporter
             if teleporters[contact.bodyA.node!.parent!.parent!] == nil {
+                location = CGPoint(x: CGFloat.random(min:-w, max: w), y: CGFloat.random(min:-h, max: h))}
+            contact.bodyB.node!.physicsBody = nil
+            if let location = location {obj!.position = levelNode.convertPoint(location, toNode: self)
+                self.location = nil}
+            else {obj!.position = levelNode.convertPoint(teleporters[contact.bodyA.node!.parent!.parent!]!, toNode: self)}
+            obj!.physicsBody = SKPhysicsBody(circleOfRadius: CGFloat(50))
+            obj!.physicsBody!.dynamic = true
+            obj!.physicsBody!.affectedByGravity = false
+            obj!.physicsBody!.mass = mass
+            obj!.physicsBody!.categoryBitMask = 1
+            obj!.physicsBody!.collisionBitMask = 3
+            obj!.physicsBody!.contactTestBitMask = 4294967295
+        }
+        // Body B is teleporter
+        else if contact.bodyB.categoryBitMask == 18 {
+            mass = contact.bodyA.mass
+            let obj = contact.bodyA.node
+            if teleporters[contact.bodyB.node!.parent!.parent!] == nil {
                 w = (levelNode.childNodeWithName("//size")!.position.x)
                 h = (levelNode.childNodeWithName("//size")!.position.y)
-                location = CGPoint(x: CGFloat.random(min:-w, max: w), y: CGFloat.random(min:-h, max: h))
-            }
-            player.physicsBody = nil
-            if let location = location {player.position = levelNode.convertPoint(location, toNode: self)}
-            else {player.position = levelNode.convertPoint(teleporters[contact.bodyA.node!.parent!.parent!]!, toNode: self)}
-            player.physicsBody = SKPhysicsBody(circleOfRadius: CGFloat(50))
-            player.physicsBody!.dynamic = true
-            player.physicsBody!.affectedByGravity = false
-            player.physicsBody!.mass = 0.8
-            player.physicsBody?.categoryBitMask = 1
-            player.physicsBody!.collisionBitMask = 3
-            player.physicsBody!.contactTestBitMask = 4294967295
+                location = CGPoint(x: CGFloat.random(min:-w, max: w), y: CGFloat.random(min:-h, max: h))}
+            contact.bodyA.node!.physicsBody = nil
+            if location != nil {contact.bodyA.node!.position = levelNode.convertPoint(location!, toNode: self); location = nil}
+            else {contact.bodyA.node!.position = levelNode.convertPoint(teleporters[contact.bodyB.node!.parent!.parent!]!, toNode: self)}
+            obj!.physicsBody = SKPhysicsBody(circleOfRadius: CGFloat(50))
+            obj!.physicsBody!.dynamic = true
+            obj!.physicsBody!.affectedByGravity = false
+            obj!.physicsBody!.mass = mass
+            obj!.physicsBody!.categoryBitMask = 1
+            obj!.physicsBody!.collisionBitMask = 3
+            obj!.physicsBody!.contactTestBitMask = 4294967295
         }
-        else if contact.bodyB.categoryBitMask == 18 {
-            player.physicsBody = nil
-            if let location = location {player.position = levelNode.convertPoint(location, toNode: self)}
-            else {player.position = levelNode.convertPoint(teleporters[contact.bodyB.node!.parent!.parent!]!, toNode: self)}
-            player.physicsBody = SKPhysicsBody(circleOfRadius: CGFloat(50))
-            player.physicsBody!.dynamic = true
-            player.physicsBody?.affectedByGravity = false
-            player.physicsBody!.mass = 0.8
-            player.physicsBody?.categoryBitMask = 1
-            player.physicsBody?.collisionBitMask = 3
-            player.physicsBody!.contactTestBitMask = 4294967295}
+        // For Level 4
         else if (contact.bodyA.node?.name == "Oops" || contact.bodyB.node?.name == "Oops") && index == 4 {
             index += 1}
         else if (contact.bodyA.node?.name == "Oops" || contact.bodyB.node?.name == "Oops") && index == 5 {
             index += 1}
     }
+    
     func gameOver(){
         player.physicsBody?.velocity = CGVectorMake(0, 0)
         player.physicsBody?.dynamic = false
         player.runAction(SKAction.colorizeWithColor(UIColor.redColor(), colorBlendFactor: 1.0, duration: 0.50))
-        restartButton.hidden = false}
+        buttonRestart.hidden = false}
     
     // Actions to be done when swiped
     func swiped(sender: UISwipeGestureRecognizer) {
@@ -192,6 +334,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
     func loadCurrentLevel(){
         levelNode.removeAllChildren()
         teleporters.removeAll()
+        monsters.removeAll()
         switch currentLevel {
         case 1:
             resourcePath = NSBundle.mainBundle().pathForResource("level1", ofType: "sks")
@@ -229,11 +372,13 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
             requiredPieces = 4
             sight.hidden = false
         default:
+            if gameMode == 0 {gameMode += 1}
             resourcePath = NSBundle.mainBundle().pathForResource("congrats", ofType: "sks")
-            levelNode.zPosition = 1; currentLevel = 1; data.setValue(10, forKey: "highestLevel");
-            gameOver()}
+            currentLevel = 1; gameOver(); data.setInteger(10, forKey: "highestLevel")}
         if let resourcePath = resourcePath{
             levelNode.addChild(SKReferenceNode (URL: NSURL (fileURLWithPath: resourcePath)))
+            w = (levelNode.childNodeWithName("//size")!.position.x)
+            h = (levelNode.childNodeWithName("//size")!.position.y)
             // Connections
             if currentLevel <= 10 {
                 goal = levelNode.childNodeWithName("//goal")
@@ -241,11 +386,26 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
                 door = levelNode.childNodeWithName("//door")}
             // Teleporters
             switch currentLevel{
+            case 1:
+                if gameMode == 1 {
+                    newMonster()
+                    monsters.last!.position = CGPointMake(CGFloat.random(min:-w, max: w), CGFloat.random(min:-h, max: h))}
+            case 2:
+                if gameMode == 1 {
+                    newMonster(); monsters.last!.position = levelNode.childNodeWithName("//M")!.position}
+            case 3:
+                if gameMode == 1 {
+                    newMonster(); monsters.last!.position = levelNode.childNodeWithName("//M")!.position
+                }
             case 4:
                 teleporters[levelNode.childNodeWithName("//t1")!] = levelNode.childNodeWithName("//l1")!.position
                 teleporters[levelNode.childNodeWithName("//t2")!] = levelNode.childNodeWithName("//l2")!.position
                 teleporters[levelNode.childNodeWithName("//t3")!] = levelNode.childNodeWithName("//start")!.position
-                
+                if gameMode == 1 {
+                    newMonster(); monsters.last!.position = levelNode.childNodeWithName("//M1")!.position
+                    newMonster(); monsters.last!.position = levelNode.childNodeWithName("//M2")!.position
+                    newMonster(); monsters.last!.position = levelNode.childNodeWithName("//M3")!.position
+                }
             case 5:
                 teleporters[levelNode.childNodeWithName("//t1s")!] = levelNode.childNodeWithName("//start")!.position
                 teleporters[levelNode.childNodeWithName("//t2s")!] = levelNode.childNodeWithName("//start")!.position
@@ -253,10 +413,20 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
                 teleporters[levelNode.childNodeWithName("//t4")!] = levelNode.childNodeWithName("//l4")!.position
                 teleporters[levelNode.childNodeWithName("//t5g")!] = levelNode.childNodeWithName("//g")!.position
                 teleporters[levelNode.childNodeWithName("//t6k")!] = levelNode.childNodeWithName("//k")!.position
+                if gameMode == 1 {
+                    newMonster(); monsters.last!.position = levelNode.childNodeWithName("//M1")!.position
+                    newMonster(); monsters.last!.position = levelNode.childNodeWithName("//M2")!.position
+                }
             case 6:
                 teleporters[levelNode.childNodeWithName("//ran")!] = nil
+                if gameMode == 1 {
+                    newMonster(); monsters.last!.position = levelNode.childNodeWithName("//M")!.position
+                }
             case 7:
                 teleporters[levelNode.childNodeWithName("//ran")!] = nil
+                if gameMode == 1 {
+                    newMonster(); monsters.last!.position = levelNode.childNodeWithName("//M")!.position
+                }
             case 8:
                 teleporters[levelNode.childNodeWithName("//r1")!] = nil
                 teleporters[levelNode.childNodeWithName("//r2")!] = nil
@@ -266,18 +436,28 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
                 teleporters[levelNode.childNodeWithName("//t1")!] = levelNode.childNodeWithName("//loc")!.position
                 teleporters[levelNode.childNodeWithName("//t2")!] = levelNode.childNodeWithName("//loc")!.position
                 teleporters[levelNode.childNodeWithName("//t3")!] = levelNode.childNodeWithName("//loc")!.position
+                if gameMode == 1 {
+                    newMonster(); monsters.last!.position = levelNode.childNodeWithName("//M1")!.position
+                    newMonster(); monsters.last!.position = levelNode.childNodeWithName("//M2")!.position
+                }
             case 9:
                 teleporters[levelNode.childNodeWithName("//r1")!] = nil
                 teleporters[levelNode.childNodeWithName("//r2")!] = nil
                 teleporters[levelNode.childNodeWithName("//t1")!] = levelNode.childNodeWithName("//l1")!.position
                 teleporters[levelNode.childNodeWithName("//t2")!] = levelNode.childNodeWithName("//l2")!.position
+                if gameMode == 1 {
+                    newMonster()
+                    monsters.last!.position = CGPointMake(CGFloat.random(min:-w, max: w), CGFloat.random(min:-h, max: h))}
             case 10:
                 teleporters[levelNode.childNodeWithName("//toPiece")!] = levelNode.childNodeWithName("//loc1")!.position
                 teleporters[levelNode.childNodeWithName("//toKey")!] = levelNode.childNodeWithName("//loc2")!.position
                 teleporters[levelNode.childNodeWithName("//ran")!] = nil
-                
-            default: break
-            }
+                if gameMode == 1 {
+                    newMonster(); monsters.last!.position = levelNode.childNodeWithName("//M1")!.position
+                    newMonster(); monsters.last!.position = levelNode.childNodeWithName("//M2")!.position
+                    newMonster(); monsters.last!.position = levelNode.childNodeWithName("//M3")!.position
+                }
+            default: break}
         }
         // Set the starting position
         startNode = levelNode.childNodeWithName("//start")
@@ -290,4 +470,21 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
         let scene = GameScene(fileNamed:"GameScene") as GameScene!
         scene.scaleMode = .AspectFit
         skView.presentScene(scene)}
+    
+    func newMonster() {
+        let monster = Monster(imageNamed: "m")
+        monster.xScale = 2; monster.yScale = 2
+        monster.physicsBody = SKPhysicsBody(circleOfRadius: CGFloat(monster.size.width * 0.5))
+        monster.physicsBody!.dynamic = true
+        monster.physicsBody!.affectedByGravity = false
+        monster.physicsBody!.mass = 0.5
+        monster.physicsBody!.categoryBitMask = 1024
+        monster.physicsBody!.collisionBitMask = 4294967295
+        monster.physicsBody!.contactTestBitMask = 4294967295
+        monster.physicsBody!.fieldBitMask = 4294967295
+        monster.anchorPoint = CGPointMake(0.5, 0.5)
+        monster.zPosition = 1
+        levelNode.addChild(monster)
+        monsters.append(monster)
+    }
 }

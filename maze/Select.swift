@@ -16,8 +16,24 @@ var locks: [SKNode?]!
 
 class Select: SKScene {
     var lv1, lv2, lv3, lv4, lv5, lv6, lv7, lv8, lv9, lv10: MSButtonNode!
+    var modeLabel: SKLabelNode!
+    var modeButton: MSButtonNode!
     
     override func didMoveToView(view: SKView) {
+        modeLabel = self.childNodeWithName("mode") as! SKLabelNode
+        modeButton = self.childNodeWithName("MODE") as! MSButtonNode
+        modeButton.selectedHandler = {
+            if data.boolForKey("nightmare") && gameMode == 0 {
+                gameMode = 1
+                self.modeLabel.text = "Nightmare Mode"
+                self.modeLabel.fontColor = UIColor.redColor()
+            }
+            else if data.boolForKey("nightmare") && gameMode == 1 {
+                gameMode = 0
+                self.modeLabel.text = "Normal Mode"
+                self.modeLabel.fontColor = UIColor.whiteColor()
+            }
+        }
         re = self.childNodeWithName("re") as! MSButtonNode
         re.selectedHandler = {
             let skView = self.view as SKView!
@@ -82,8 +98,8 @@ class Select: SKScene {
         locks = [nil, lock2, lock3, lock4, lock5, lock6, lock7, lock8, lock9, lock10]
         if data.integerForKey("highestLevel") > 0 {
         for n in 1...data.integerForKey("highestLevel") {
+            if n == 11 {break}
             if locks[n - 1] != nil {locks[n - 1]!.removeFromParent(); locks[n - 1] = nil}}}
-    
     }
     
     func loadGame() {
