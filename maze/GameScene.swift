@@ -9,16 +9,21 @@
 import SpriteKit
 import Foundation
 import UIKit
+import GameKit
+import AVFoundation
 
 //mixpanel.track("", parameters:["": ""])
 var gameMode: Int = 0
 var currentLevel = 1
 var tutorialLabel: SKLabelNode!
 var timer: Double = 0
-var tutorial: [String] = ["Swipe!", "Find the exit.", "Grab the key!", "Here is a hard one.", "Teleport!", "WHAT?!", "Not this way...", "Try this.", "Test your luck!", "Where is the key?", "Oops! Someone turned of the light...", "The last level!"]
+var tutorial: [String] = ["Swipe!", "Find the exit.", "Grab the key!", "Here is a hard one.", "Teleport!", "WHAT?!", "Not this way...", "Try this.", "Test your luck!", "Where is the key?", "Oops! Someone turned of the light...", "The last level!", "Monster killed"]
 var index = -1 {didSet {
     tutorialLabel.runAction(SKAction.fadeInWithDuration(3)); tutorialLabel.text = tutorial[index]; tutorialLabel.runAction(SKAction.sequence([SKAction.waitForDuration(6), SKAction.fadeOutWithDuration(3)]))}}
 var numDeath = 0
+var pieceLocationTimer = 0.0
+var sound: SKNode!
+var s = true
 
 var data = NSUserDefaults.standardUserDefaults()
 
@@ -49,9 +54,13 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
     var buttonSkip: MSButtonNode!
     var buttonPiece: MSButtonNode!
     var buttonNext: MSButtonNode!
+    var buttonSound: MSButtonNode!
     var swipeBegins: CGPoint!
     var swipeEnds: CGPoint!
     var swipeVector: CGVector!
+    var music1 = AVPlayer(URL: NSURL(fileURLWithPath:NSBundle.mainBundle().pathForResource("music1",ofType:"mp3")!))
+    var music2 = AVPlayer(URL: NSURL(fileURLWithPath:NSBundle.mainBundle().pathForResource("music2",ofType:"mp3")!))
+    var music3 = AVPlayer(URL: NSURL(fileURLWithPath:NSBundle.mainBundle().pathForResource("music3",ofType:"mp3")!))
     
     var impulse: CGFloat = 100.0
     var resourcePath: String?
@@ -63,20 +72,18 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
     var h: CGFloat = 0
     var location: CGPoint?
     var velocity: CGVector = CGVectorMake(0, 0)
-    var pieceLocationTimer = 0.0
     var x: CGFloat = 0.0
     var y: CGFloat = 0.0
     var mass: CGFloat = 0.5
     
     var record: [String]!
+    var NMrecord: [String]!
     
     override func didMoveToView(view: SKView) {
-        data.setBool(true, forKey: "nightmare")
-        if data.arrayForKey("records")?[0] == nil {
-            data.setValue(["","","","","","","","","",""], forKey: "records")
-        }
         record = data.arrayForKey("records") as! [String]
+        NMrecord = data.arrayForKey("NMrecords") as! [String]
         if data.integerForKey("highestLevel") == 0 {data.setValue(1, forKey: "highestLevel")}
+        if data.integerForKey("highestLevel") < 10 {data.setBool(false, forKey: "nightmare")}
         player = childNodeWithName("player")
         levelNode = childNodeWithName("level")
         
@@ -88,6 +95,8 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
         Continue.hidden = true
         sight = camera!.childNodeWithName("a")
         sight.hidden = true
+        sound = camera!.childNodeWithName("sound")
+        sound.hidden = s
         tutorialLabel = camera!.childNodeWithName("tutorialLabel") as! SKLabelNode
         timeLabel = camera!.childNodeWithName("timer") as! SKLabelNode
         label = camera!.childNodeWithName("label") as! SKLabelNode
@@ -99,7 +108,11 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
         // Return button
         buttonMain = camera!.childNodeWithName("main") as! MSButtonNode
         buttonMain.selectedHandler = {
-            timer = 0; numDeath = 0
+            self.pauseMusic()
+            for n in self.monsters {
+                if n.music != nil {n.music?.pause(); n.music = nil}
+            }
+            timer = 0; numDeath = 0; pieceLocationTimer = 0
             let skView = self.view as SKView!
             let scene = Main(fileNamed:"Main") as Main!
             scene.scaleMode = .AspectFit
@@ -107,34 +120,48 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
         // Pause button
         buttonPause = camera!.childNodeWithName("pause") as! MSButtonNode
         buttonPause.selectedHandler = {
-            for n in self.monsters {n.removeAllActions()}
+            for n in self.monsters {
+                n.removeAllActions()
+                if n.music != nil {n.music?.pause()}
+            }
+            if sound.hidden == false {self.pauseMusic()}
             self.velocity = (self.player.physicsBody?.velocity)!
             self.player.physicsBody?.velocity = CGVectorMake(0, 0)
             self.player.physicsBody?.dynamic = false
             self.Continue.hidden = false}
         buttonSkip = camera!.childNodeWithName("skip") as! MSButtonNode
         buttonSkip.selectedHandler = {
-            currentLevel += 1; numDeath = 0
+            currentLevel += 1; numDeath = 0; pieceLocationTimer = 0
             if currentLevel > data.integerForKey("highestLevel"){data.setValue(currentLevel, forKey: "highestLevel")}
             self.reload()}
         buttonSkip.hidden = true
         // Key piece position button
         buttonPiece = camera!.childNodeWithName("piecePosition") as! MSButtonNode
         buttonPiece.selectedHandler = {
-            if self.requiredPieces > 0 && self.pieceLocationTimer >= 12{
+            if self.requiredPieces > 0 && pieceLocationTimer >= 20{
                 if self.numPieces < self.requiredPieces {
                     self.cameraTarget = self.levelNode.childNodeWithName("//piece")!.parent!.parent}
                 else {self.cameraTarget = self.levelNode.childNodeWithName("//KEY")}
                 self.cameraTarget!.runAction(SKAction.sequence([SKAction.waitForDuration(2), SKAction.runBlock({self.cameraTarget = self.player})]))
-                self.pieceLocationTimer = 0}
+                pieceLocationTimer = 0}
         }
         buttonNext = pass.childNodeWithName("//next") as! MSButtonNode
         buttonNext.selectedHandler = {
-            currentLevel += 1; numDeath = 0
-            self.reload()
+            currentLevel += 1; numDeath = 0; pieceLocationTimer = 0; self.reload()
+        }
+        buttonSound = camera!.childNodeWithName("buttonSound") as! MSButtonNode
+        buttonSound.selectedHandler = {
+            if sound.hidden == true {
+                self.playMusic(); sound.hidden = false; s = false
+            }
+            else {
+                self.pauseMusic(); sound.hidden = true; s = true
+                for n in self.monsters {n.music!.pause()}
+            }
         }
         // Load level
         loadCurrentLevel()
+        if sound.hidden == false {playMusic()}
         if requiredPieces > 0 {
             levelNode.childNodeWithName("//KEY")!.hidden = true
             label.text = "\(numPieces) / \(requiredPieces)"}
@@ -157,6 +184,11 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
         
         physicsWorld.contactDelegate = self
    //     self.view?.showsPhysics = true
+        self.view!.showsPhysics = false
+        self.view!.showsFPS = false
+        self.view!.showsNodeCount = false
+        self.view!.showsFields = false
+        
         
         
     }
@@ -167,6 +199,8 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
             tutorialLabel.runAction(SKAction.waitForDuration(3));index += 1}
         if Continue.hidden == false {
             Continue.hidden = true
+            if sound.hidden == false {playMusic()}
+            for n in monsters {if n.music != nil {n.music?.play()}}
             player.physicsBody?.dynamic = true
             player.physicsBody?.velocity = velocity}
         if data.integerForKey("highestLevel") >= 4 {
@@ -189,7 +223,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
                 if self.nodeAtPoint(touch.locationInNode(self)) != player {
                     swipeEnds = touch.locationInNode(self)
                     swipeVector = CGVectorMake(swipeEnds.x - swipeBegins.x, swipeEnds.y - swipeBegins.y)
-                    if (swipeVector.dx <= 5 && swipeVector.dx >= -5) && (swipeVector.dy <= 5 && swipeVector.dy >= -5) {return}
+                    if (swipeVector.dx <= 8 && swipeVector.dx >= -8) && (swipeVector.dy <= 8 && swipeVector.dy >= -8) {return}
                     x = swipeVector.dx / sqrt(swipeVector.dx * swipeVector.dx + swipeVector.dy * swipeVector.dy)
                     y = swipeVector.dy / sqrt(swipeVector.dx * swipeVector.dx + swipeVector.dy * swipeVector.dy)
                     player.physicsBody?.applyImpulse(CGVectorMake(impulse * x, impulse * y))}
@@ -203,37 +237,43 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
         if let cameraTarget = cameraTarget {
             if cameraTarget == player {
                 camera?.runAction(SKAction.moveTo(player.position, duration: 0.1))}
-            else {camera?.runAction(SKAction.moveTo(levelNode.convertPoint(cameraTarget.position, toNode: self), duration: 1.5))}
+            else {camera?.runAction(SKAction.sequence([SKAction.moveTo(levelNode.convertPoint(cameraTarget.position, toNode: self), duration: 1.5), SKAction.waitForDuration(2)]))}
         }
+        // When game is not over or paused
         if buttonRestart.hidden == true && Continue.hidden == true {
             timer += 1/60; pieceLocationTimer += 1/60
             timeLabel.text = "\(Double(Int(timer * 100)) / 100.0)"
-            for n in monsters {n.search(player, game: self)}
+            for n in monsters {n.search(player, game: self); n.searched = false}
         }
-        if pieceLocationTimer >= 12 && requiredPieces > 0 {
-            self.Frame.hidden = false
-            self.Frame.runAction(SKAction.fadeInWithDuration(0.1))
-            self.Frame.runAction(SKAction.resizeByWidth(1000, height: 1000, duration: 10))
-            self.Frame.runAction(SKAction.sequence([SKAction.fadeOutWithDuration(7),SKAction.resizeByWidth(-1000, height: -1000, duration: 0.5)]))
+        if pieceLocationTimer >= 20 && requiredPieces > 0 && Frame.hidden == true {
+            
+            self.Frame.runAction(SKAction.sequence([SKAction.runBlock({self.Frame.hidden = false}), SKAction.fadeInWithDuration(0.1), SKAction.resizeByWidth(600, height: 400, duration: 2), SKAction.fadeOutWithDuration(0.5), SKAction.resizeByWidth(-600, height: -400, duration: 2), SKAction.runBlock({self.Frame.hidden = true})]))
         }
-        
     }
     
     func didBeginContact(contact: SKPhysicsContact){
         if contact.bodyA.node == nil || contact.bodyB.node == nil {return}
-        // 1024: monster. If monster collide with anything other than player
-        if contact.bodyA.categoryBitMask == 1024 && contact.bodyB.node != player && contact.bodyB.categoryBitMask != 24{return}
-        else if contact.bodyB.categoryBitMask == 1024 && contact.bodyA.node != player && contact.bodyA.categoryBitMask != 24{return}
-        // 1024: monster
-        if (contact.bodyA.node == player && contact.bodyB.categoryBitMask == 1024) || (contact.bodyB.node == player && contact.bodyA.categoryBitMask == 1024) {
+        // 4: monster. If monster collide with anything other than player
+        if contact.bodyA.categoryBitMask == 4 && contact.bodyB.node != player && contact.bodyB.categoryBitMask != 24{return}
+        else if contact.bodyB.categoryBitMask == 4 && contact.bodyA.node != player && contact.bodyA.categoryBitMask != 24{return}
+        // 4: monster
+        if (contact.bodyA.node == player && contact.bodyB.categoryBitMask == 4) || (contact.bodyB.node == player && contact.bodyA.categoryBitMask == 4) {
             for n in monsters {n.physicsBody = nil}
             numDeath += 1; gameOver(); if numDeath >= 5 {buttonSkip.hidden = false}
+            die1.percentComplete = 1.0
+            die10.percentComplete += 1/10
+            die30.percentComplete += 1/30
+            GKAchievement.reportAchievements([die1, die10, die30], withCompletionHandler: nil)
         }
         // 24: trap
         if contact.bodyA.categoryBitMask == 24 || contact.bodyB.categoryBitMask == 24 {
-            if contact.bodyA.categoryBitMask == 1024 {contact.bodyA.node!.removeFromParent()}
-            else if contact.bodyB.categoryBitMask == 1024 {contact.bodyB.node!.removeFromParent()}
-            else {numDeath += 1; gameOver(); if numDeath >= 5 {buttonSkip.hidden = false}}
+            for n in monsters {
+                if n == contact.bodyA.node || n == contact.bodyB.node {n.die(self); return}
+                }
+            numDeath += 1; gameOver(); if numDeath >= 5 {buttonSkip.hidden = false}
+            die1.percentComplete = 100
+            die10.percentComplete += 1/15 * 100
+            die30.percentComplete += 1/30 * 100
         }
         // Goal
         else if contact.bodyA.node == goal || contact.bodyB.node == goal {
@@ -243,17 +283,36 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
             if currentLevel == 3 {hint.text = "You can now swipe at any direction!"} 
             else if currentLevel == 7 {hint.text = "Try the hint button in main manu."}
             else if currentLevel == 8 {hint.text = "Tap & hold the ball to slow down!"}
-            else if currentLevel == 10 {hint.text = "Nightmare Mode enabled."}
-            if record[currentLevel - 1] == "" {
-                record[currentLevel - 1] = String(timer)}
-            else {
-                if timer <= Double(record[currentLevel - 1]) {record[currentLevel - 1] = String(timer)}
-            }
+            else if currentLevel == 10 {hint.text = "Nightmare Mode enabled."; data.setBool(true, forKey: "nightmare")}
+            
             if currentLevel == data.integerForKey("highestLevel") {data.setInteger(currentLevel + 1, forKey: "highestLevel")}
-            data.setValue(record, forKey: "records"); timer = 0; numDeath = 0}
-        // 4: key
-        else if (contact.bodyA.categoryBitMask == 4 || contact.bodyB.categoryBitMask == 4) && levelNode.childNodeWithName("//KEY")?.hidden != true
-        {if contact.bodyA.categoryBitMask == 4 {contact.bodyA.node!.removeFromParent()}
+            
+            // Achievement
+            if currentLevel == 4 {level4.percentComplete = 100}
+            else if currentLevel == 5 {level5.percentComplete = 100}
+            else if currentLevel == 10 {level10.percentComplete = 100}
+            GKAchievement.reportAchievements([level4, level5, level10], withCompletionHandler: nil)
+            
+            // Records for normal mode
+            if gameMode == 0 {
+                if record[currentLevel - 1] == "" {
+                    record[currentLevel - 1] = String(timer)}
+                else {
+                    if timer <= Double(record[currentLevel - 1]) {record[currentLevel - 1] = String(timer)}
+                }
+                data.setValue(record, forKey: "records"); timer = 0; numDeath = 0}
+            // Records for Nightmare mode
+            else {
+                if NMrecord[currentLevel - 1] == "" {
+                    NMrecord[currentLevel - 1] = String(timer)}
+                else {
+                    if timer <= Double(NMrecord[currentLevel - 1]) {NMrecord[currentLevel - 1] = String(timer)}
+                }
+                data.setValue(NMrecord, forKey: "NMrecords"); timer = 0; numDeath = 0}
+            }
+        // 8: key
+        else if (contact.bodyA.categoryBitMask == 8 || contact.bodyB.categoryBitMask == 8) && levelNode.childNodeWithName("//KEY")?.hidden != true
+        {if contact.bodyA.categoryBitMask == 8 {contact.bodyA.node!.removeFromParent()}
         else {contact.bodyB.node!.removeFromParent()}; door.removeFromParent()}
         // 16: torch
         else if contact.bodyA.categoryBitMask == 16 || contact.bodyB.categoryBitMask == 16 {
@@ -313,9 +372,15 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
     }
     
     func gameOver(){
+        if sound.hidden == false {
+            pauseMusic()
+            for n in monsters {
+                if n.music != nil {n.music!.pause()}
+            }
+        }
         player.physicsBody?.velocity = CGVectorMake(0, 0)
         player.physicsBody?.dynamic = false
-        player.runAction(SKAction.colorizeWithColor(UIColor.redColor(), colorBlendFactor: 1.0, duration: 0.50))
+        player.runAction(SKAction.colorizeWithColor(UIColor.redColor(), colorBlendFactor: 1, duration: 0.50))
         buttonRestart.hidden = false}
     
     // Actions to be done when swiped
@@ -374,11 +439,13 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
         default:
             if gameMode == 0 {gameMode += 1}
             resourcePath = NSBundle.mainBundle().pathForResource("congrats", ofType: "sks")
-            currentLevel = 1; gameOver(); data.setInteger(10, forKey: "highestLevel")}
+            gameOver(); data.setInteger(10, forKey: "highestLevel")
+        }
         if let resourcePath = resourcePath{
             levelNode.addChild(SKReferenceNode (URL: NSURL (fileURLWithPath: resourcePath)))
-            w = (levelNode.childNodeWithName("//size")!.position.x)
-            h = (levelNode.childNodeWithName("//size")!.position.y)
+            if levelNode.childNodeWithName("//size") != nil
+                {w = (levelNode.childNodeWithName("//size")!.position.x)
+                h = (levelNode.childNodeWithName("//size")!.position.y)}
             // Connections
             if currentLevel <= 10 {
                 goal = levelNode.childNodeWithName("//goal")
@@ -457,7 +524,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
                     newMonster(); monsters.last!.position = levelNode.childNodeWithName("//M2")!.position
                     newMonster(); monsters.last!.position = levelNode.childNodeWithName("//M3")!.position
                 }
-            default: break}
+            default: currentLevel = 10}
         }
         // Set the starting position
         startNode = levelNode.childNodeWithName("//start")
@@ -473,18 +540,43 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
     
     func newMonster() {
         let monster = Monster(imageNamed: "m")
-        monster.xScale = 2; monster.yScale = 2
         monster.physicsBody = SKPhysicsBody(circleOfRadius: CGFloat(monster.size.width * 0.5))
         monster.physicsBody!.dynamic = true
         monster.physicsBody!.affectedByGravity = false
         monster.physicsBody!.mass = 0.5
-        monster.physicsBody!.categoryBitMask = 1024
-        monster.physicsBody!.collisionBitMask = 4294967295
+        monster.physicsBody!.categoryBitMask = 4
+        monster.physicsBody!.collisionBitMask = 3
         monster.physicsBody!.contactTestBitMask = 4294967295
         monster.physicsBody!.fieldBitMask = 4294967295
         monster.anchorPoint = CGPointMake(0.5, 0.5)
         monster.zPosition = 1
         levelNode.addChild(monster)
         monsters.append(monster)
+    }
+    func playMusic() {
+        if gameMode == 0 {
+            if currentLevel <= 2 || currentLevel == 4 || currentLevel == 6 || currentLevel == 7 {
+                music1.play()
+            }
+            else if currentLevel == 3 || currentLevel == 5 || currentLevel == 8 {
+                music2.play()
+            }
+            else if currentLevel == 9 || currentLevel == 10 {
+                music3.play()
+            }
+        }
+    }
+    func pauseMusic() {
+        if gameMode == 0 {
+            if currentLevel <= 2 || currentLevel == 4 || currentLevel == 6 || currentLevel == 7 {
+                music1.pause()
+            }
+            else if currentLevel == 3 || currentLevel == 5 || currentLevel == 8 {
+                music2.pause()
+            }
+            else if currentLevel == 9 || currentLevel == 10 {
+                music3.pause()
+            }
+        }
     }
 }

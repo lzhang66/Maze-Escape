@@ -22,18 +22,6 @@ class Select: SKScene {
     override func didMoveToView(view: SKView) {
         modeLabel = self.childNodeWithName("mode") as! SKLabelNode
         modeButton = self.childNodeWithName("MODE") as! MSButtonNode
-        modeButton.selectedHandler = {
-            if data.boolForKey("nightmare") && gameMode == 0 {
-                gameMode = 1
-                self.modeLabel.text = "Nightmare Mode"
-                self.modeLabel.fontColor = UIColor.redColor()
-            }
-            else if data.boolForKey("nightmare") && gameMode == 1 {
-                gameMode = 0
-                self.modeLabel.text = "Normal Mode"
-                self.modeLabel.fontColor = UIColor.whiteColor()
-            }
-        }
         re = self.childNodeWithName("re") as! MSButtonNode
         re.selectedHandler = {
             let skView = self.view as SKView!
@@ -96,10 +84,51 @@ class Select: SKScene {
         lock9 = self.childNodeWithName("lock9")
         lock10 = self.childNodeWithName("lock10")
         locks = [nil, lock2, lock3, lock4, lock5, lock6, lock7, lock8, lock9, lock10]
-        if data.integerForKey("highestLevel") > 0 {
-        for n in 1...data.integerForKey("highestLevel") {
-            if n == 11 {break}
-            if locks[n - 1] != nil {locks[n - 1]!.removeFromParent(); locks[n - 1] = nil}}}
+        if gameMode == 1 {
+            self.modeLabel.text = "Nightmare Mode"
+            self.modeLabel.fontColor = UIColor.redColor()
+            for i in 0..<labels.count {
+                locks[i]?.removeFromParent()
+                if data.stringArrayForKey("NMrecords")?[i] != nil {
+                    labels[i]!.text = data.stringArrayForKey("NMrecords")![i]}
+            }
+        }
+        else if gameMode == 0 {
+            self.modeLabel.text = "Normal Mode"
+            self.modeLabel.fontColor = UIColor.whiteColor()
+            for i in 0..<labels.count {
+                if data.stringArrayForKey("records")?[i] != nil {
+                    labels[i]!.text = data.stringArrayForKey("records")![i]}
+                if i <= data.integerForKey("highestLevel") - 1 {
+                    locks[i]?.removeFromParent()
+                }
+            }
+        }
+        
+        modeButton.selectedHandler = {
+            if data.boolForKey("nightmare") && gameMode == 0 {
+                gameMode = 1
+                self.modeLabel.text = "Nightmare Mode"
+                self.modeLabel.fontColor = UIColor.redColor()
+                for i in 0..<labels.count {
+                    if data.stringArrayForKey("NMrecords")?[i] != nil {
+                        labels[i]!.text = data.stringArrayForKey("NMrecords")![i]}
+                }
+            }
+            else if data.boolForKey("nightmare") && gameMode == 1 {
+                gameMode = 0
+                self.modeLabel.text = "Normal Mode"
+                self.modeLabel.fontColor = UIColor.whiteColor()
+                for i in 0..<labels.count {
+                    if data.stringArrayForKey("records")?[i] != nil {
+                        labels[i]!.text = data.stringArrayForKey("records")![i]}
+                }
+            }
+        }
+        self.view!.showsPhysics = false
+        self.view!.showsFPS = false
+        self.view!.showsNodeCount = false
+        self.view!.showsFields = false
     }
     
     func loadGame() {
