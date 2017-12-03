@@ -9,6 +9,7 @@
 import Foundation
 import SpriteKit
 import AVFoundation
+import GameKit
 
 class Monster: SKSpriteNode {
     var sp: CGFloat = 3
@@ -60,6 +61,7 @@ class Monster: SKSpriteNode {
     func die(game: SKScene){
         /* Particle effect */
         if music != nil {music?.pause(); music = nil}
+        killer.percentComplete = 100
         let particles = SKEmitterNode(fileNamed: "monsterDie")!
         print(particles)
         particles.position = self.convertPoint(CGPointMake(0, 0), toNode: game)

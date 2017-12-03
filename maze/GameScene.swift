@@ -131,7 +131,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
             self.Continue.hidden = false}
         buttonSkip = camera!.childNodeWithName("skip") as! MSButtonNode
         buttonSkip.selectedHandler = {
-            currentLevel += 1; numDeath = 0; pieceLocationTimer = 0
+            currentLevel += 1; numDeath = 0; pieceLocationTimer = 0; timer = 0
             if currentLevel > data.integerForKey("highestLevel"){data.setValue(currentLevel, forKey: "highestLevel")}
             self.reload()}
         buttonSkip.hidden = true
@@ -267,8 +267,11 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
         }
         // 24: trap
         if contact.bodyA.categoryBitMask == 24 || contact.bodyB.categoryBitMask == 24 {
-            for n in monsters {
-                if n == contact.bodyA.node || n == contact.bodyB.node {n.die(self); return}
+            for n in 0..<monsters.count {
+                if monsters[n] == contact.bodyA.node || monsters[n] == contact.bodyB.node {
+                    monsters[n].die(self); monsters.removeAtIndex(n)
+                    if monsters.count == 0 {if sound.hidden == false {playMusic()}}
+                    return}
                 }
             numDeath += 1; gameOver(); if numDeath >= 5 {buttonSkip.hidden = false}
             die1.percentComplete = 100
@@ -554,7 +557,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
         monsters.append(monster)
     }
     func playMusic() {
-        if gameMode == 0 {
+        if gameMode == 0 || monsters.count == 0 {
             if currentLevel <= 2 || currentLevel == 4 || currentLevel == 6 || currentLevel == 7 {
                 music1.play()
             }
@@ -567,7 +570,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
         }
     }
     func pauseMusic() {
-        if gameMode == 0 {
+        if gameMode == 0 || monsters.count == 0 {
             if currentLevel <= 2 || currentLevel == 4 || currentLevel == 6 || currentLevel == 7 {
                 music1.pause()
             }

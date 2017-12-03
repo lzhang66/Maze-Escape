@@ -92,6 +92,8 @@
 		0AB780441D5CDD71002D4C3F /* music4.wav in Resources */ = {isa = PBXBuildFile; fileRef = 0AB780431D5CDD71002D4C3F /* music4.wav */; };
 		0AB780461D5CE1FA002D4C3F /* music3.mp3 in Resources */ = {isa = PBXBuildFile; fileRef = 0AB780451D5CE1FA002D4C3F /* music3.mp3 */; };
 		0AB780481D5CE779002D4C3F /* music2.mp3 in Resources */ = {isa = PBXBuildFile; fileRef = 0AB780471D5CE779002D4C3F /* music2.mp3 */; };
+		0AB7804A1D5D2CCB002D4C3F /* InfoPage.sks in Resources */ = {isa = PBXBuildFile; fileRef = 0AB780491D5D2CCB002D4C3F /* InfoPage.sks */; };
+		0AB7804C1D5D37D1002D4C3F /* InfoPage.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0AB7804B1D5D37D1002D4C3F /* InfoPage.swift */; };
 		0AB953BB1D54EA790036BA74 /* m.png in Resources */ = {isa = PBXBuildFile; fileRef = 0AB953BA1D54EA790036BA74 /* m.png */; };
 		0AB953BD1D551BFE0036BA74 /* spark.png in Resources */ = {isa = PBXBuildFile; fileRef = 0AB953BC1D551BFE0036BA74 /* spark.png */; };
 		0AB953C51D58F4780036BA74 /* level4.png in Resources */ = {isa = PBXBuildFile; fileRef = 0AB953C41D58F4780036BA74 /* level4.png */; };
@@ -258,6 +260,8 @@
 		0AB780431D5CDD71002D4C3F /* music4.wav */ = {isa = PBXFileReference; lastKnownFileType = audio.wav; path = music4.wav; sourceTree = "<group>"; };
 		0AB780451D5CE1FA002D4C3F /* music3.mp3 */ = {isa = PBXFileReference; lastKnownFileType = audio.mp3; path = music3.mp3; sourceTree = "<group>"; };
 		0AB780471D5CE779002D4C3F /* music2.mp3 */ = {isa = PBXFileReference; lastKnownFileType = audio.mp3; path = music2.mp3; sourceTree = "<group>"; };
+		0AB780491D5D2CCB002D4C3F /* InfoPage.sks */ = {isa = PBXFileReference; lastKnownFileType = file.sks; name = InfoPage.sks; path = ../InfoPage.sks; sourceTree = "<group>"; };
+		0AB7804B1D5D37D1002D4C3F /* InfoPage.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = InfoPage.swift; sourceTree = "<group>"; };
 		0AB953BA1D54EA790036BA74 /* m.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = m.png; sourceTree = "<group>"; };
 		0AB953BC1D551BFE0036BA74 /* spark.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = spark.png; sourceTree = "<group>"; };
 		0AB953C41D58F4780036BA74 /* level4.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = level4.png; sourceTree = "<group>"; };
@@ -503,6 +507,8 @@
 				0AEB9CC01D3FFE12002AAA6D /* Select.swift */,
 				0AEB9CA31D3FB033002AAA6D /* Main.sks */,
 				0AEB9CBE1D3FFC8A002AAA6D /* Main.swift */,
+				0AB780491D5D2CCB002D4C3F /* InfoPage.sks */,
+				0AB7804B1D5D37D1002D4C3F /* InfoPage.swift */,
 				0AE811941D2EB1A5001C6044 /* MSButtonNode.swift */,
 				0AA2CD7E1D2C7D5400C9CF86 /* GameViewController.swift */,
 				0AA2CD801D2C7D5400C9CF86 /* Main.storyboard */,
@@ -663,10 +669,11 @@
 				TargetAttributes = {
 					0AA2CD741D2C7D5400C9CF86 = {
 						CreatedOnToolsVersion = 7.3.1;
-						DevelopmentTeam = 335MPS6PE9;
+						DevelopmentTeam = TTK8N6SR77;
 					};
 					0AA2CD8C1D2C7D5400C9CF86 = {
 						CreatedOnToolsVersion = 7.3.1;
+						DevelopmentTeam = TTK8N6SR77;
 						TestTargetID = 0AA2CD741D2C7D5400C9CF86;
 					};
 					0AA2CD971D2C7D5400C9CF86 = {
@@ -756,6 +763,7 @@
 				0AB780421D5CC8C8002D4C3F /* sound2.png in Resources */,
 				0AB780401D5CC8C1002D4C3F /* sound1.png in Resources */,
 				0A7AA5251D2D89B5009B5A2E /* level1.png in Resources */,
+				0AB7804A1D5D2CCB002D4C3F /* InfoPage.sks in Resources */,
 				0A7AA52B1D2E93C9009B5A2E /* level2.sks in Resources */,
 				0AB1BF571D2FEC5E0023CEF1 /* level10.4.png in Resources */,
 				0AB954061D5A60AD0036BA74 /* red2.sks in Resources */,
@@ -854,6 +862,7 @@
 				0A46A9D71D50F67D00C5DB87 /* SKTAudio.swift in Sources */,
 				0A46A9D81D50F67D00C5DB87 /* SKTEffects.swift in Sources */,
 				0AA2CD7F1D2C7D5400C9CF86 /* GameViewController.swift in Sources */,
+				0AB7804C1D5D37D1002D4C3F /* InfoPage.swift in Sources */,
 				0A46A9D11D50F67D00C5DB87 /* CGVector+Extensions.swift in Sources */,
 				0AEB9CBF1D3FFC8A002AAA6D /* Main.swift in Sources */,
 				0AA2CD791D2C7D5400C9CF86 /* AppDelegate.swift in Sources */,
@@ -1009,16 +1018,17 @@
 				CLANG_ENABLE_MODULES = YES;
 				CODE_SIGN_IDENTITY = "iPhone Developer";
 				"CODE_SIGN_IDENTITY[sdk=iphoneos*]" = "iPhone Developer";
+				DEVELOPMENT_TEAM = TTK8N6SR77;
 				INFOPLIST_FILE = maze/Info.plist;
 				IPHONEOS_DEPLOYMENT_TARGET = 9.0;
 				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/Frameworks";
 				ONLY_ACTIVE_ARCH = YES;
-				PRODUCT_BUNDLE_IDENTIFIER = com.LiZhang.maze;
+				PRODUCT_BUNDLE_IDENTIFIER = "com.LiZhang-.maze";
 				PRODUCT_NAME = Amazed;
 				PROVISIONING_PROFILE = "";
 				SWIFT_OBJC_BRIDGING_HEADER = "maze/maze-Bridging-Header.h";
 				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
-				TARGETED_DEVICE_FAMILY = "1,2";
+				TARGETED_DEVICE_FAMILY = 1;
 			};
 			name = Debug;
 		};
@@ -1029,14 +1039,15 @@
 				CLANG_ENABLE_MODULES = YES;
 				CODE_SIGN_IDENTITY = "iPhone Developer";
 				"CODE_SIGN_IDENTITY[sdk=iphoneos*]" = "iPhone Developer";
+				DEVELOPMENT_TEAM = TTK8N6SR77;
 				INFOPLIST_FILE = maze/Info.plist;
 				IPHONEOS_DEPLOYMENT_TARGET = 9.0;
 				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/Frameworks";
-				PRODUCT_BUNDLE_IDENTIFIER = com.LiZhang.maze;
+				PRODUCT_BUNDLE_IDENTIFIER = "com.LiZhang-.maze";
 				PRODUCT_NAME = Amazed;
 				PROVISIONING_PROFILE = "";
 				SWIFT_OBJC_BRIDGING_HEADER = "maze/maze-Bridging-Header.h";
-				TARGETED_DEVICE_FAMILY = "1,2";
+				TARGETED_DEVICE_FAMILY = 1;
 			};
 			name = Release;
 		};
@@ -1045,11 +1056,12 @@
 			buildSettings = {
 				BUNDLE_LOADER = "$(TEST_HOST)";
 				DEBUG_INFORMATION_FORMAT = dwarf;
+				DEVELOPMENT_TEAM = TTK8N6SR77;
 				INFOPLIST_FILE = mazeTests/Info.plist;
 				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/Frameworks @loader_path/Frameworks";
 				PRODUCT_BUNDLE_IDENTIFIER = com.makeschool.mazeTests;
 				PRODUCT_NAME = "$(TARGET_NAME)";
-				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/maze.app/maze";
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/Amazed.app/Amazed";
 			};
 			name = Debug;
 		};
@@ -1057,11 +1069,12 @@
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				BUNDLE_LOADER = "$(TEST_HOST)";
+				DEVELOPMENT_TEAM = TTK8N6SR77;
 				INFOPLIST_FILE = mazeTests/Info.plist;
 				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/Frameworks @loader_path/Frameworks";
 				PRODUCT_BUNDLE_IDENTIFIER = com.makeschool.mazeTests;
 				PRODUCT_NAME = "$(TARGET_NAME)";
-				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/maze.app/maze";
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/Amazed.app/Amazed";
 			};
 			name = Release;
 		};
